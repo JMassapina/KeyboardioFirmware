@@ -198,11 +198,10 @@ void bt_send_key_report() {
     int nextPressedReportByte =0;
     // Pull out all the modifier keys from the key report
 
-      for (byte j = 0; j < KEYS_HELD_BUFFER; j++) {
+      for (int j = 0; j < KEYS_HELD_BUFFER; j++) {
         switch(charsBeingReported[j]) {
             // pack the modifiers into the modifier bytes
             case HID_KEYBOARD_LEFT_CONTROL:
-                Serial.println("LEFT CONTROL"); 
                 modifiers |= B00000001;
               break;
             case HID_KEYBOARD_LEFT_SHIFT:
@@ -241,7 +240,6 @@ void bt_send_key_report() {
 
     // if the report is different than the previous report, send the report
 
-    if (modifiers != 0) Serial.print(modifiers,DEC);
     // Keyboard report, length 9, desc 1, 6 keys being keysPressed
     keyReport[0] = 0xFD;
     keyReport[1] = 0x09;

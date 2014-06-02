@@ -217,6 +217,7 @@
 #define Key_Enter (Key){ KEY_FLAGS, HID_KEYBOARD_ENTER }
 
 
+#define Key_BTDisconnect (Key) {KEY_FLAGS, HID_KEYBOARD_BT_DISCONNECT }
 #define Key_Keypad1  (Key) { KEY_FLAGS,  HID_KEYPAD_1_AND_END }
 #define Key_Keypad2  (Key) { KEY_FLAGS,  HID_KEYPAD_2_AND_DOWN_ARROW }
 #define Key_Keypad3  (Key) { KEY_FLAGS,  HID_KEYPAD_3_AND_PAGE_DOWN }
@@ -344,6 +345,9 @@
 // Keyboard HID mappings
 
 //  Reserved (no_event_indicated)	0x00
+#define HID_KEYBOARD_BT_DISCONNECT 0x00
+
+
 #define HID_KEYBOARD_ERROR_ROLLOVER	0x01
 #define HID_KEYBOARD_POST_FAIL	0x02
 #define HID_KEYBOARD_ERROR_UNDEFINED	0x03
