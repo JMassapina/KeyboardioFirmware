@@ -72,8 +72,14 @@ void handle_mouse_key_press(byte switchState, Key mappedKey, char &x, char &y);
 void send_key_events();
 
 
+// bluetooth
 
-
-
+void report_bluetooth_updates();
+void setup_bluetooth();
+void rn42_send_key_report();
+void releaseKeycode(byte keyCode);
+void pressKeycode(byte keyCode);
+void bt_send_bytes(byte[], int);
+void bt_send_chars(char[], int);
 //Do not add code below this line
 #endif /* KeyboardIO_H_ */

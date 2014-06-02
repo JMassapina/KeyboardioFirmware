@@ -15,7 +15,6 @@
  *
 **/
 
-
 #include <stdio.h>
 #include <math.h>
 
@@ -24,14 +23,19 @@
 #include <EEPROM.h>  // Don't need this for CLI compilation, but do need it in the IDE
 
 //extern int usbMaxPower;
-#define DEBUG_SERIAL 0
+//#define DEBUG_SERIAL 0
 
+#define BT_KB_REPORT_SIZE 11
+#define BLUETOOTH_MODE 1
 
  byte matrixState[ROWS][COLS];
 
 
 byte charsBeingReported[KEYS_HELD_BUFFER]; // A bit vector for the 256 keys we might conceivably be holding down
 byte charsReportedLastTime[KEYS_HELD_BUFFER]; // A bit vector for the 256 keys we might conceivably be holding down
+
+
+byte btLastReport[BT_KB_REPORT_SIZE];
 
 
 long reporting_counter = 0;
@@ -121,13 +125,172 @@ void scan_matrix()
 void setup()
 {
   //usbMaxPower = 100;
-  delay(2500);
+  Serial.begin(115200);
+  if (BLUETOOTH_MODE) {
+  setup_bluetooth();
+  } else {
   Keyboard.begin();
   Mouse.begin();
+  }
   setup_matrix();
   setup_pins();
   primary_keymap = load_primary_keymap();
 }
+
+
+void setup_bluetooth() {
+  Serial1.begin(115200);
+    delay(1000);
+bt_send_chars("$$$",3);
+bt_send_chars ("Q,0\r\n",5);
+  delay(150);
+    bt_send_chars("SA,1\r\n",6);
+  delay(150);
+    bt_send_chars("SM,0\r\n",6);
+  delay(150);
+    bt_send_chars("SH,0030\r\n",9);
+  delay(150);
+if (0) {
+bt_send_chars("SJ,0800\r\n",9);
+  delay(150);
+    bt_send_chars("ST,255\r\n",8);
+  delay(150);
+
+}
+bt_send_chars("CFI\r\n",5);
+
+    delay(150);
+
+
+}
+
+void btPressKeycode(byte keyCode) {
+    ///XXX TODO
+}
+
+void btReleaseKeycode(byte keyCode) {
+    ///XXX TODO
+}
+
+
+// borrowed from http://forum.arduino.cc/index.php/topic,5157.0.html 
+// XXX TODO to hit demo day
+boolean array_cmp(byte *a, byte *b, int len_a, int len_b){
+      int n;
+
+      // if their lengths are different, return false
+      if (len_a != len_b) return false;
+
+      // test each element to be the same. if not, return false
+      for (n=0;n<len_a;n++) if (a[n]!=b[n]) return false;
+
+      //ok, if we have not returned yet, they are equal :)
+      return true;
+}
+
+
+void bt_send_key_report() {
+
+    byte keysPressed[6];
+    byte modifiers = 0x00;
+    byte keyReport[BT_KB_REPORT_SIZE];
+
+    int nextPressedReportByte =0;
+    // Pull out all the modifier keys from the key report
+
+      for (byte j = 0; j < KEYS_HELD_BUFFER; j++) {
+        switch(charsBeingReported[j]) {
+            // pack the modifiers into the modifier bytes
+            case HID_KEYBOARD_LEFT_CONTROL:
+                Serial.println("LEFT CONTROL"); 
+                modifiers |= B00000001;
+              break;
+            case HID_KEYBOARD_LEFT_SHIFT:
+                modifiers |= B00000010;
+              break;
+            case HID_KEYBOARD_LEFT_ALT:
+                modifiers |= B00000100;
+              break;
+            case HID_KEYBOARD_LEFT_GUI:
+                modifiers |= B00001000;
+              break;
+
+            case HID_KEYBOARD_RIGHT_CONTROL:
+                modifiers |= B00010000;
+              break;
+            case HID_KEYBOARD_RIGHT_SHIFT:
+                modifiers |= B00100000;
+              break;
+            case HID_KEYBOARD_RIGHT_ALT:
+                modifiers |= B01000000;
+              break;
+            case HID_KEYBOARD_RIGHT_GUI:
+                modifiers |= B10000000;
+              break;
+
+            default: 
+                if(nextPressedReportByte >= 6) {
+                    break; // don't overflow the key report.
+                          // right now, we only support nkro
+                }
+                // pack the non-modifiers being pressed into a key report
+                keysPressed[nextPressedReportByte++] = charsBeingReported[j];
+                break;
+        }
+      }
+
+    // if the report is different than the previous report, send the report
+
+    if (modifiers != 0) Serial.print(modifiers,DEC);
+    // Keyboard report, length 9, desc 1, 6 keys being keysPressed
+    keyReport[0] = 0xFD;
+    keyReport[1] = 0x09;
+    keyReport[2] = 0x01;
+    keyReport[3] = modifiers;
+    keyReport[4] = 0x00; 
+    keyReport[5] = keysPressed[0];
+    keyReport[6] = keysPressed[1];
+    keyReport[7] = keysPressed[2];
+    keyReport[8] = keysPressed[3];
+    keyReport[9] = keysPressed[4];
+    keyReport[10] = keysPressed[5];
+    // send the key report
+
+    if (!array_cmp(keyReport,btLastReport,BT_KB_REPORT_SIZE,BT_KB_REPORT_SIZE)) {
+        bt_send_bytes(keyReport,BT_KB_REPORT_SIZE);
+    }
+  for (byte i = 0; i < BT_KB_REPORT_SIZE; i++) {
+    btLastReport[i] = keyReport[i];
+  }
+}
+
+
+void bt_send_bytes(byte string[],int length) {
+    // iterate over the bytes passed in
+    for(int i=0; i< length; i++) {
+    // print each byte 
+        Serial1.write(string[i]);
+    // flush the serial buffer
+        Serial1.flush();
+    // delay for 50 milliseconds
+    }
+        delay(20);
+
+}
+
+void bt_send_chars(char string[],int length) {
+    // iterate over the bytes passed in
+    for(int i=0; i< length; i++) {
+    // print each character
+        Serial1.print(string[i]);
+    // flush the serial buffer
+        Serial1.flush();
+    // delay for 50 milliseconds
+    }
+
+        delay(20);
+}
+
 
 void loop()
 {
@@ -137,7 +300,6 @@ void loop()
   reset_matrix();
   reset_key_report();
 }
-
 
 
 
@@ -570,7 +732,7 @@ void release_keys_not_being_pressed()
   }
   for (byte i = 0; i < KEYS_HELD_BUFFER; i++) {
     if (charsReportedLastTime[i] != 0x00) {
-      Keyboard.release(charsReportedLastTime[i]);
+      releaseKeycode(charsReportedLastTime[i]);
     }
   }
 }
@@ -656,7 +818,7 @@ void send_key_events()
   // really, these are signed small ints
   char x = 0;
   char y = 0;
-
+    byte modifiers = 0;
   for (byte row = 0; row < ROWS; row++) {
 
     for (byte col = 0; col < COLS; col++) {
@@ -679,16 +841,37 @@ void send_key_events()
         if (key_is_pressed(switchState)) {
           record_key_being_pressed(mappedKey.rawKey);
           if (key_toggled_on (switchState)) {
-            Keyboard.press(mappedKey.rawKey);
+            pressKeycode(mappedKey.rawKey);
           }
         } else if (key_toggled_off (switchState)) {
-          Keyboard.release(mappedKey.rawKey);
+            releaseKeycode(mappedKey.rawKey);
         }
       }
     }
+
   }
   handle_mouse_movement(x, y);
   release_keys_not_being_pressed();
+  if (BLUETOOTH_MODE) {
+
+    bt_send_key_report();
+  }
+}
+
+
+void releaseKeycode(byte keyCode) {
+    if (BLUETOOTH_MODE) {
+
+    } else {
+          Keyboard.releaseKeycode(keyCode);
+          }
+}
+
+void pressKeycode(byte keyCode) {
+    if (BLUETOOTH_MODE) {
+    } else {
+          Keyboard.pressKeycode(keyCode);
+          }
 }
 
 

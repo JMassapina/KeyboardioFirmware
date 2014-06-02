@@ -32,4 +32,4 @@ static const byte rowPins[ROWS] = { A1,A2,A3,A4,A5};
 // if we're sticking to boot protocol, these could all be 6 + mods
 // but *mumble*
 
-#define KEYS_HELD_BUFFER 12
+#define KEYS_HELD_BUFFER 6
