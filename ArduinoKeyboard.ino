@@ -17,6 +17,9 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_NeoMatrix.h>
+#include <Adafruit_NeoPixel.h>
 
 #include "KeyboardConfig.h"
 #include "keymaps_generated.h"
@@ -28,13 +31,50 @@
 #define BT_KB_REPORT_SIZE 11
 #define BLUETOOTH_MODE 1
 
- byte matrixState[ROWS][COLS];
+#define RGBPIN SCK
+
+// MATRIX DECLARATION:
+// Parameter 1 = width of NeoPixel matrix
+// Parameter 2 = height of matrix
+// Parameter 3 = pin number (most are valid)
+// Parameter 4 = matrix layout flags, add together as needed:
+//   NEO_MATRIX_TOP, NEO_MATRIX_BOTTOM, NEO_MATRIX_LEFT, NEO_MATRIX_RIGHT:
+//     Position of the FIRST LED in the matrix; pick two, e.g.
+//     NEO_MATRIX_TOP + NEO_MATRIX_LEFT for the top-left corner.
+//   NEO_MATRIX_ROWS, NEO_MATRIX_COLUMNS: LEDs are arranged in horizontal
+//     rows or in vertical columns, respectively; pick one or the other.
+//   NEO_MATRIX_PROGRESSIVE, NEO_MATRIX_ZIGZAG: all rows/columns proceed
+//     in the same order, or alternate lines reverse direction; pick one.
+//   See example below for these values in action.
+// Parameter 5 = pixel type flags, add together as needed:
+//   NEO_KHZ800  800 KHz bitstream (most NeoPixel products w/WS2812 LEDs)
+//   NEO_KHZ400  400 KHz (classic 'v1' (not v2) FLORA pixels, WS2811 drivers)
+//   NEO_GRB     Pixels are wired for GRB bitstream (most NeoPixel products)
+//   NEO_RGB     Pixels are wired for RGB bitstream (v1 FLORA pixels, not v2)
+
+
+// Example for NeoPixel Shield.  In this application we'd like to use it
+// as a 5x8 tall matrix, with the USB port positioned at the top of the
+// Arduino.  When held that way, the first pixel is at the top right, and
+// lines are arranged in columns, progressive order.  The shield uses
+// 800 KHz (v2) pixels that expect GRB color data.
+Adafruit_NeoMatrix matrix = Adafruit_NeoMatrix(8, 8, RGBPIN,
+  NEO_MATRIX_TOP     + NEO_MATRIX_RIGHT +
+  NEO_MATRIX_COLUMNS + NEO_MATRIX_PROGRESSIVE,
+  NEO_GRB            + NEO_KHZ800);
+
+const uint16_t colors[] = {
+  matrix.Color(255, 0, 0), matrix.Color(0, 255, 0), matrix.Color(0, 0, 255) };
+
+
+byte matrixState[ROWS][COLS];
 
 
 byte charsBeingReported[KEYS_HELD_BUFFER]; // A bit vector for the 256 keys we might conceivably be holding down
 byte charsReportedLastTime[KEYS_HELD_BUFFER]; // A bit vector for the 256 keys we might conceivably be holding down
 
 
+String btLastKey = "X";
 byte btLastReport[BT_KB_REPORT_SIZE];
 
 
@@ -134,22 +174,36 @@ void setup()
   }
   setup_matrix();
   setup_pins();
+  setup_rgb();
   primary_keymap = load_primary_keymap();
 }
 
+void setup_rgb() {
+  matrix.begin();
+  matrix.setTextWrap(false);
+  matrix.setBrightness(40);
+  matrix.setTextColor(colors[0]);
 
+}
+
+byte BT_DISCONNECT[] = {0x00};
 void setup_bluetooth() {
   Serial1.begin(115200);
     delay(1000);
+    
+    bt_send_bytes(BT_DISCONNECT ,4);
+    delay(200);
+
 bt_send_chars("$$$",3);
+delay(200);
 bt_send_chars ("Q,0\r\n",5);
-  delay(150);
+  delay(200);
     bt_send_chars("SA,1\r\n",6);
-  delay(150);
+  delay(200);
     bt_send_chars("SM,0\r\n",6);
-  delay(150);
+  delay(200);
     bt_send_chars("SH,0030\r\n",9);
-  delay(150);
+  delay(200);
 if (0) {
 bt_send_chars("SJ,0800\r\n",9);
   delay(150);
@@ -259,6 +313,7 @@ void bt_send_key_report() {
     }
   for (byte i = 0; i < BT_KB_REPORT_SIZE; i++) {
     btLastReport[i] = keyReport[i];
+   if(keyReport[i] != 0)   btLastKey = String(keyReport[i],DEC);
   }
 }
 
@@ -289,6 +344,9 @@ void bt_send_chars(char string[],int length) {
         delay(20);
 }
 
+int rgb_width    = matrix.width();
+int rgb_pass = 0;
+
 
 void loop()
 {
@@ -297,8 +355,21 @@ void loop()
   send_key_events();
   reset_matrix();
   reset_key_report();
+  rgb_update();
 }
 
+void rgb_update () {
+ matrix.fillScreen(0);
+  matrix.setCursor(rgb_width, 0);
+  matrix.print(btLastKey);
+  if(--rgb_width < -36) {
+  rgb_width = matrix.width();
+    if(++rgb_pass >= 3) rgb_pass = 0;
+    matrix.setTextColor(matrix.Color(random(255),random(255),random(255)));//,matrix.Color(random(255),random(255),random(255)));
+  }
+  matrix.show();
+  delay(50);
+}
 
 
 
