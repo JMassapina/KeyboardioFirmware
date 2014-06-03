@@ -20,6 +20,9 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_NeoMatrix.h>
 #include <Adafruit_NeoPixel.h>
+#include <Wire.h>  // Wire.h library is required to use SX1509 lib
+
+#include <sx1509_library.h>  
 
 #include "KeyboardConfig.h"
 #include "keymaps_generated.h"
@@ -30,6 +33,50 @@
 
 #define BT_KB_REPORT_SIZE 11
 #define BLUETOOTH_MODE 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+// Uncomment one of the four lines to match your SX1509's address
+//  pin selects. SX1509 breakout defaults to [0:0] (0x3E).
+const byte LEFT_SX1509_ADDRESS = 0x3E;  // SX1509 I2C address (00)
+const byte RIGHT_SX1509_ADDRESS = 0x3F;  // SX1509 I2C address (01)
+//const byte SX1509_ADDRESS = 0x70;  // SX1509 I2C address (10)
+//const byte SX1509_ADDRESS = 0x71;  // SX1509 I2C address (11)
+
+// Pin definitions, not actually used in this example
+const byte interruptPin = 2;
+const byte resetPin = 8;
+
+// Create a new sx1509Class object. You can make it with all
+// of the above pins:
+//sx1509Class sx1509(SX1509_ADDRESS, resetPin, interruptPin);
+// Or make an sx1509 object with just the SX1509 I2C address:
+sx1509Class left_sx1509(LEFT_SX1509_ADDRESS);
+
+sx1509Class right_sx1509(RIGHT_SX1509_ADDRESS);
+// SX1509 pin defintions:
+const byte buttonPin = 1;
+const byte ledPin = 14;
+
+
+
+
+
+
+
+
+
+
 
 #define RGBPIN SCK
 
@@ -175,7 +222,22 @@ void setup()
   setup_matrix();
   setup_pins();
   setup_rgb();
+  setup_sx1509();
   primary_keymap = load_primary_keymap();
+}
+
+void setup_sx1509() {
+
+   left_sx1509.init();  // Initialize the SX1509, does Wire.begin()
+  left_sx1509.pinDir(buttonPin, INPUT);  // Set SX1509 pin 1 as an input
+  left_sx1509.writePin(buttonPin, HIGH);  // Activate pull-up
+  left_sx1509.pinDir(ledPin, OUTPUT);  // Set SX1509 pin 14 as an output
+
+  right_sx1509.init();  // Initialize the SX1509, does Wire.begin()
+  right_sx1509.pinDir(buttonPin, INPUT);  // Set SX1509 pin 1 as an input
+  right_sx1509.writePin(buttonPin, HIGH);  // Activate pull-up
+  right_sx1509.pinDir(ledPin, OUTPUT);  // Set SX1509 pin 14 as an output
+ 
 }
 
 void setup_rgb() {

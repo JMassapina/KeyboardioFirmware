@@ -71,6 +71,8 @@ void handle_synthetic_key_press(byte switchState, Key mappedKey);
 void handle_mouse_key_press(byte switchState, Key mappedKey, char &x, char &y);
 void send_key_events();
 
+// io expanders
+void setup_sx1509();
 
 // bluetooth
 
