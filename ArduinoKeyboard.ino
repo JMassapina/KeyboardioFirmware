@@ -49,6 +49,10 @@ const byte RIGHT_SX1509_ADDRESS = 0x3F;  // SX1509 I2C address (01)
 //const byte SX1509_ADDRESS = 0x70;  // SX1509 I2C address (10)
 //const byte SX1509_ADDRESS = 0x71;  // SX1509 I2C address (11)
 
+boolean left_sx1509=false;
+boolean right_sx1509=false;
+
+
 // Pin definitions, not actually used in this example
 const byte interruptPin = 2;
 const byte resetPin = 8;
@@ -127,28 +131,33 @@ void set_keymap(Key keymapEntry, byte matrixStateEntry) {
 
 
 
-void scan_sx1509(int row_offset, int col_offset, sx1509Class io, bool invert_col_num) {
-
+void scan_matrix() {
+  
 
 
 
   //scan the Keyboard matrix looking for connections
   for (byte row = 8; row < 12; row++) {
+if (left_sx1509) {
     leftSx1509.writePin(row, LOW);
+}
+if (right_sx1509) {
     rightSx1509.writePin(row, LOW);
-
+}
     for (byte col = 0; col < 8; col++) {
       
       
       //If we see an electrical connection on I->J,
 
+if (left_sx1509) {
       if (leftSx1509.readPin(col)) {
         matrixState[row - 8][col] |= 0; // noop. just here for clarity
       } else {
         matrixState[row-8][col] |= 1; // noop. just here for clarity
 
       }
-
+}
+if (right_sx1509) {
 
 
       if (rightSx1509.readPin(col)) {
@@ -157,6 +166,7 @@ void scan_sx1509(int row_offset, int col_offset, sx1509Class io, bool invert_col
         matrixState[row-8][15-col] |= 1; // noop. just here for clarity
 
       }
+}
 
 
       // while we're inspecting the electrical matrix, we look
@@ -183,16 +193,6 @@ void scan_sx1509(int row_offset, int col_offset, sx1509Class io, bool invert_col
 
 }
 
-void scan_matrix()
-{
-
-  scan_sx1509(-8, 0, leftSx1509, false);
-
-  // scan_sx1509(-8,8, rightSx1509,true);
-
-
-
-}
 
 
 void setup()
@@ -207,7 +207,7 @@ void setup()
   primary_keymap = load_primary_keymap();
 }
 
-void init_sx1509(sx1509Class io) {
+boolean init_sx1509(sx1509Class io) {
   int x = 0;
   x = io.init();
   if (x)
@@ -217,6 +217,7 @@ void init_sx1509(sx1509Class io) {
   else
   {
     Serial.println("SX1509 Init Failed");
+    return false;
   }
 
 
@@ -248,14 +249,15 @@ void init_sx1509(sx1509Class io) {
   io.pinDir(11, OUTPUT);
   io.writePin(11, HIGH);
 
+    return true;
 }
 
 
 void setup_sx1509() {
   // Must first initialize the sx1509:
-  init_sx1509(rightSx1509);
+  right_sx1509 =  init_sx1509(rightSx1509);
 
-  init_sx1509(leftSx1509);
+  left_sx1509 = init_sx1509(leftSx1509);
 }
 
 
