@@ -1,4 +1,4 @@
-
+                                                  
 #include "ArduinoKeyboard.h"
 // Copyright 2013 Jesse Vincent <jesse@fsck.com>
 // All Rights Reserved. (To be licensed under an opensource license
@@ -29,6 +29,7 @@
 
 #define BT_KB_REPORT_SIZE 11
 #define BLUETOOTH_MODE false
+#define DEBUG_TRACE true
 
 
 
@@ -49,8 +50,8 @@ const byte RIGHT_SX1509_ADDRESS = 0x3E;  // SX1509 I2C address (01)
 //const byte SX1509_ADDRESS = 0x70;  // SX1509 I2C address (10)
 //const byte SX1509_ADDRESS = 0x71;  // SX1509 I2C address (11)
 
-boolean left_sx1509=false;
-boolean right_sx1509=false;
+boolean left_sx1509 = false;
+boolean right_sx1509 = false;
 
 
 // Pin definitions, not actually used in this example
@@ -103,70 +104,68 @@ void reset_matrix()
 
 
 void set_keymap(Key keymapEntry, byte matrixStateEntry) {
-  if (keymapEntry.flags & SWITCH_TO_KEYMAP) {
-    // this logic sucks. there is a better way TODO this
-    if (! (keymapEntry.flags ^ ( MOMENTARY | SWITCH_TO_KEYMAP))) {
-      if (key_is_pressed(matrixStateEntry)) {
-        if ( keymapEntry.rawKey == KEYMAP_NEXT) {
-          active_keymap++;
-        } else if ( keymapEntry.rawKey == KEYMAP_PREVIOUS) {
-          active_keymap--;
-        } else {
-          active_keymap = keymapEntry.rawKey;
-        }
-      }
-    } else if (! (keymapEntry.flags ^ (  SWITCH_TO_KEYMAP))) {
-      // switch keymap and stay there
-      if (key_toggled_on(matrixStateEntry)) {
-        active_keymap = primary_keymap = keymapEntry.rawKey;
-        save_primary_keymap(primary_keymap);
-#ifdef DEBUG_SERIAL
-        Serial.print("keymap is now:");
-        Serial.print(active_keymap);
-#endif
+  if (! keymapEntry.flags & SWITCH_TO_KEYMAP) {
+     return;
+  }
+   
+   
+  // this logic sucks. there is a better way TODO this
+  if (! (keymapEntry.flags ^ ( MOMENTARY | SWITCH_TO_KEYMAP))) {
+    if (key_is_pressed(matrixStateEntry)) {
+      if ( keymapEntry.rawKey == KEYMAP_NEXT) {
+        active_keymap++;
+      } else if ( keymapEntry.rawKey == KEYMAP_PREVIOUS) {
+        active_keymap--;
+      } else {
+        active_keymap = keymapEntry.rawKey;
       }
     }
+  } else if (! (keymapEntry.flags ^ (  SWITCH_TO_KEYMAP))) {
+    // switch keymap and stay there
+    if (key_toggled_on(matrixStateEntry)) {
+      active_keymap = primary_keymap = keymapEntry.rawKey;
+      save_primary_keymap(primary_keymap);
+    }
+  
   }
 }
 
 
 
 void scan_matrix() {
-  
+
 
 
 
   //scan the Keyboard matrix looking for connections
   for (byte row = 8; row < 12; row++) {
-if (left_sx1509) {
-    leftSx1509.writePin(row, LOW);
-}
-if (right_sx1509) {
-    rightSx1509.writePin(row, LOW);
-}
+    _fn_in("scanning row");
+    if (left_sx1509) {
+      leftSx1509.rawWritePin(row, LOW);
+    }
+    if (right_sx1509) {
+      rightSx1509.rawWritePin(row, LOW);
+    }
+    
+    
     for (byte col = 0; col < 8; col++) {
-      
-      
+       _fn_in("scanning col");
+
+
       //If we see an electrical connection on I->J,
 
-if (left_sx1509) {
-      if (leftSx1509.readPin(col)) {
-        matrixState[row - 8][col] |= 0; // noop. just here for clarity
-      } else {
-        matrixState[row-8][col] |= 1; // noop. just here for clarity
-
+      if (left_sx1509) {
+        
+        
+         matrixState[row - 8][col] |= ! leftSx1509.rawReadPin(col);
       }
-}
-if (right_sx1509) {
+      if (right_sx1509) {
 
 
-      if (rightSx1509.readPin(col)) {
-        matrixState[row - 8][15-col] |= 0; // noop. just here for clarity
-      } else {
-        matrixState[row-8][15-col] |= 1; // noop. just here for clarity
-
+        
+         matrixState[row - 8][15 - col] |= ! rightSx1509.rawReadPin(col);
+        
       }
-}
 
 
       // while we're inspecting the electrical matrix, we look
@@ -175,20 +174,31 @@ if (right_sx1509) {
       // that we should be looking at a seconary Keymap halfway
       // through the matrix scan
 
+      _fn_in("set_keymap");
+      if(left_sx1509 && ( keymaps[active_keymap][row - 8][col].flags & SWITCH_TO_KEYMAP)) {
+        set_keymap(keymaps[active_keymap][row - 8][col], matrixState[row - 8 ][col]);
+      }
+      if(right_sx1509   && (keymaps[active_keymap][row - 8][15 - col].flags & SWITCH_TO_KEYMAP)) { 
+        set_keymap(keymaps[active_keymap][row - 8][15 - col], matrixState[row - 8 ][15 - col]);
 
-      set_keymap(keymaps[active_keymap][row - 8][col], matrixState[row -8 ][col]);
-      set_keymap(keymaps[active_keymap][row - 8][15-col], matrixState[row -8 ][15-col]);
+      }
+      _fn_out("set keymap");
+      _fn_out("scanning col");
+  
+  }
+
+
+
+
+
+    if(left_sx1509) {
+    leftSx1509.rawWritePin(row, HIGH);
+    }
+    if (right_sx1509) {
+    rightSx1509.rawWritePin(row, HIGH);
 
     }
-
-
-
-
-
-
-    leftSx1509.writePin(row, HIGH);
-    rightSx1509.writePin(row, HIGH);
-
+    _fn_out("scanning row");
   }
 
 }
@@ -197,10 +207,11 @@ if (right_sx1509) {
 
 void setup()
 {
+  TWBR = 400000L; //Set the i2c bitrate to something the SX1509 likes better
   Serial.begin(115200);
   delay(5000);
-    Keyboard.begin();
-    Mouse.begin();
+  Keyboard.begin();
+  Mouse.begin();
   setup_sx1509();
   setup_matrix();
 
@@ -249,7 +260,7 @@ boolean init_sx1509(sx1509Class io) {
   io.pinDir(11, OUTPUT);
   io.writePin(11, HIGH);
 
-    return true;
+  return true;
 }
 
 
@@ -264,11 +275,26 @@ void setup_sx1509() {
 void loop()
 {
   active_keymap = primary_keymap;
+  _fn_in("scan_matrix");
   scan_matrix();
+  _fn_out("scan_matrix");
+ // _fn_in("send_key_events");
+
   send_key_events();
+ // _fn_out("send_key_events");
+ // _fn_in("reset_matrix");
+
   reset_matrix();
+  //_fn_out("reset_matrix");
+  //_fn_in("reset_key_report");
+
+
+
   reset_key_report();
+  //_fn_out("reset_key_report");
+
 }
+
 
 
 
@@ -283,7 +309,7 @@ void loop()
 
 boolean key_was_pressed (byte keyState)
 {
-  
+
   if ( byte((keyState >> 7)) ^ B00000001 ) {
     return false;
   } else {
@@ -706,11 +732,31 @@ void send_key_events()
 
 
 void releaseKeycode(byte keyCode) {
-    Keyboard.releaseKeycode(keyCode);
+  Keyboard.releaseKeycode(keyCode);
 }
 
 void pressKeycode(byte keyCode) {
-    Keyboard.pressKeycode(keyCode);
+  Keyboard.pressKeycode(keyCode);
+}
+
+
+int call_trace_depth = 0;
+void _fn_in(String call_name) {
+#if DEBUG_TRACE
+  Serial.print("+");
+  Serial.print(call_name);
+  Serial.print(" ");
+  Serial.println(micros());
+#endif
+}
+
+void _fn_out(String call_name) {
+#if DEBUG_TRACE
+  Serial.print("-");
+  Serial.print(call_name);
+  Serial.print(" ");
+  Serial.println(micros());
+#endif
 }
 
 

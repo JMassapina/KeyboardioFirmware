@@ -83,5 +83,7 @@ void releaseKeycode(byte keyCode);
 void pressKeycode(byte keyCode);
 void bt_send_bytes(byte[], int);
 void bt_send_chars(char[], int);
+void _fn_in(String name);
+void _fn_out(String name);
 //Do not add code below this line
 #endif /* KeyboardIO_H_ */
