@@ -73,8 +73,8 @@ void reset_matrix()
 {
   for (byte col = 0; col < COLS; col++) {
     for (byte row = 0; row < ROWS; row++) {
-      matrixState[row][col] <<= 1;
-    }
+      matrixState[row][col] <<= 7;
+      }
   }
 }
 
@@ -142,7 +142,6 @@ void scan_matrix() {
       // metakey, so we can act on it, lest we only discover
       // that we should be looking at a seconary Keymap halfway
       // through the matrix scan
-      if (0) {
         
         if (left_sx1509 && ( keymaps[active_keymap][row - 8][col].flags & SWITCH_TO_KEYMAP)) {
           set_keymap(keymaps[active_keymap][row - 8][col], matrixState[row - 8 ][col]);
@@ -151,7 +150,7 @@ void scan_matrix() {
           set_keymap(keymaps[active_keymap][row - 8][15 - col], matrixState[row - 8 ][15 - col]);
 
         }
-      }
+    
 
     }
 
@@ -202,6 +201,7 @@ boolean init_sx1509(sx1509Class io) {
   }
 
 
+  io.configClock();
   for(int i = 0; i< 8; i++) {
       io.pinDir(i, INPUT);
       io.writePin(i, HIGH);
@@ -433,15 +433,15 @@ void warp_mouse(Key ninth) {
 // we want the whole s curve, not just the bit
 // that's usually above the x and y axes;
 #define ATAN_LIMIT 1.57079633
-#define ACCELERATION_FLOOR 0.25
-#define ACCELERATION_MULTIPLIER 5
-#define  ACCELERATION_RUNWAY 5
+#define ACCELERATION_FLOOR 1
+#define ACCELERATION_MULTIPLIER 8000
+#define  ACCELERATION_RUNWAY 500
 // Climb speed is how fast we get to max speed
 // 1 is "instant"
 // 0.05 is just right
 // 0.001 is insanely slow
-
-#define ACCELERATION_CLIMB_SPEED  0.05
+  
+#define ACCELERATION_CLIMB_SPEED  0.1
 
 double mouse_accel (double cycles)
 {
@@ -452,7 +452,7 @@ double mouse_accel (double cycles)
   return accel;
 }
 
-void handle_mouse_movement( char x, char y)
+void handle_mouse_movement( char x, char y)  
 {
 
   if (x != 0 || y != 0) {
