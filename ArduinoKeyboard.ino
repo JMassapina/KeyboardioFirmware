@@ -202,33 +202,17 @@ boolean init_sx1509(sx1509Class io) {
   }
 
 
-  io.pinDir(0, INPUT);
-  io.writePin(0, HIGH);
+  for(int i = 0; i< 8; i++) {
+      io.pinDir(i, INPUT);
+      io.writePin(i, HIGH);
 
-  io.pinDir(1, INPUT);
-  io.writePin(1, HIGH);
-  io.pinDir(2, INPUT);
-  io.writePin(2, HIGH);
-  io.pinDir(3, INPUT);
-  io.writePin(3, HIGH);
-  io.pinDir(4, INPUT);
-  io.writePin(4, HIGH);
-  io.pinDir(5, INPUT);
-  io.writePin(5, HIGH);
-  io.pinDir(6, INPUT);
-  io.writePin(6, HIGH);
-  io.pinDir(7, INPUT);
-  io.writePin(7, HIGH);
+  }
 
+for (int i=8;i<12;i++) {
+    io.pinDir(i, OUTPUT);
+  io.writePin(i, HIGH);
 
-  io.pinDir(8, OUTPUT);
-  io.writePin(8, HIGH);
-  io.pinDir(9, OUTPUT);
-  io.writePin(9, HIGH);
-  io.pinDir(10, OUTPUT);
-  io.writePin(10, HIGH);
-  io.pinDir(11, OUTPUT);
-  io.writePin(11, HIGH);
+}
 
   return true;
 }
