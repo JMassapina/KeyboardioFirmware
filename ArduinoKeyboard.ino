@@ -1,5 +1,6 @@
-                                                  
+
 #include "ArduinoKeyboard.h"
+#include <ProfileTimer.h>
 // Copyright 2013 Jesse Vincent <jesse@fsck.com>
 // All Rights Reserved. (To be licensed under an opensource license
 // before the release of the keyboard.io model 01
@@ -134,24 +135,23 @@ void set_keymap(Key keymapEntry, byte matrixStateEntry) {
 
 void scan_matrix() {
 
+//    ProfileTimer t ("scanning matrix");
 
 
 
   //scan the Keyboard matrix looking for connections
   for (byte row = 8; row < 12; row++) {
-    _fn_in("scanning row");
+    // ProfileTimer t ("scanning row");
+
     if (left_sx1509) {
       leftSx1509.rawWritePin(row, LOW);
     }
     if (right_sx1509) {
       rightSx1509.rawWritePin(row, LOW);
     }
-    
-    
+
+
     for (byte col = 0; col < 8; col++) {
-       _fn_in("scanning col");
-
-
       //If we see an electrical connection on I->J,
 
       if (left_sx1509) {
@@ -182,14 +182,13 @@ void scan_matrix() {
         set_keymap(keymaps[active_keymap][row - 8][15 - col], matrixState[row - 8 ][15 - col]);
 
       }
-      _fn_out("set keymap");
-      _fn_out("scanning col");
-  
-  }
+
+    }
 
 
 
-
+ {
+    // ProfileTimer t ("bringing the pins high again");
 
     if(left_sx1509) {
     leftSx1509.rawWritePin(row, HIGH);
@@ -198,7 +197,7 @@ void scan_matrix() {
     rightSx1509.rawWritePin(row, HIGH);
 
     }
-    _fn_out("scanning row");
+ }
   }
 
 }
@@ -207,6 +206,7 @@ void scan_matrix() {
 
 void setup()
 {
+  // ProfileTimer t ("setup");
   TWBR = 400000L; //Set the i2c bitrate to something the SX1509 likes better
   Serial.begin(115200);
   delay(5000);
@@ -274,24 +274,18 @@ void setup_sx1509() {
 
 void loop()
 {
+  // ProfileTimer t ("loop");
+
   active_keymap = primary_keymap;
-  _fn_in("scan_matrix");
   scan_matrix();
-  _fn_out("scan_matrix");
- // _fn_in("send_key_events");
 
   send_key_events();
- // _fn_out("send_key_events");
- // _fn_in("reset_matrix");
 
   reset_matrix();
-  //_fn_out("reset_matrix");
-  //_fn_in("reset_key_report");
 
 
 
   reset_key_report();
-  //_fn_out("reset_key_report");
 
 }
 
@@ -738,27 +732,5 @@ void releaseKeycode(byte keyCode) {
 void pressKeycode(byte keyCode) {
   Keyboard.pressKeycode(keyCode);
 }
-
-
-int call_trace_depth = 0;
-void _fn_in(String call_name) {
-#if DEBUG_TRACE
-  Serial.print("+");
-  Serial.print(call_name);
-  Serial.print(" ");
-  Serial.println(micros());
-#endif
-}
-
-void _fn_out(String call_name) {
-#if DEBUG_TRACE
-  Serial.print("-");
-  Serial.print(call_name);
-  Serial.print(" ");
-  Serial.println(micros());
-#endif
-}
-
-
 
 
