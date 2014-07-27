@@ -30,39 +30,15 @@
 
 #define BT_KB_REPORT_SIZE 11
 #define BLUETOOTH_MODE false
-#define DEBUG_TRACE true
+#define DEBUG_TRACE false
 
-
-
-
-
-
-
-
-
-
-
-
-
-// Uncomment one of the four lines to match your SX1509's address
-//  pin selects. SX1509 breakout defaults to [0:0] (0x3E).
 const byte LEFT_SX1509_ADDRESS = 0x3F;  // SX1509 I2C address (00)
 const byte RIGHT_SX1509_ADDRESS = 0x3E;  // SX1509 I2C address (01)
-//const byte SX1509_ADDRESS = 0x70;  // SX1509 I2C address (10)
-//const byte SX1509_ADDRESS = 0x71;  // SX1509 I2C address (11)
 
 boolean left_sx1509 = false;
 boolean right_sx1509 = false;
 
 
-// Pin definitions, not actually used in this example
-const byte interruptPin = 2;
-const byte resetPin = 8;
-
-// Create a new sx1509Class object. You can make it with all
-// of the above pins:
-//sx1509Class sx1509(SX1509_ADDRESS, resetPin, interruptPin);
-// Or make an sx1509 object with just the SX1509 I2C address:
 sx1509Class leftSx1509(LEFT_SX1509_ADDRESS);
 
 sx1509Class rightSx1509(RIGHT_SX1509_ADDRESS);
@@ -106,10 +82,9 @@ void reset_matrix()
 
 void set_keymap(Key keymapEntry, byte matrixStateEntry) {
   if (! keymapEntry.flags & SWITCH_TO_KEYMAP) {
-     return;
+    return;
   }
-   
-   
+
   // this logic sucks. there is a better way TODO this
   if (! (keymapEntry.flags ^ ( MOMENTARY | SWITCH_TO_KEYMAP))) {
     if (key_is_pressed(matrixStateEntry)) {
@@ -127,7 +102,7 @@ void set_keymap(Key keymapEntry, byte matrixStateEntry) {
       active_keymap = primary_keymap = keymapEntry.rawKey;
       save_primary_keymap(primary_keymap);
     }
-  
+
   }
 }
 
@@ -397,44 +372,6 @@ void report(byte row, byte col, boolean value)
 //
 
 
-void _draw_warp_section(long x_origin, long y_origin, long x_end, long y_end, int tracing_scale) {
-
-  if ( x_origin != x_end )   { // it's a horizontal line
-
-    if (x_origin > x_end)  { // right to left
-      //            tracing_scale =  (x_origin-x_end) /100;
-      for (long x = x_origin ; x >= x_end; x = x - tracing_scale) {
-        Mouse.moveAbsolute(x, y_origin);
-      }
-
-    } else { // left to right
-      //         tracing_scale =  (x_end-x_origin) /100;
-      for (long x = x_origin ; x <= x_end; x = x + tracing_scale) {
-        Mouse.moveAbsolute(x, y_origin);
-      }
-
-    }
-
-  } else { // it's a vertical line
-
-    if (y_origin > y_end)  { // bottom to top
-      //       tracing_scale =  (y_origin-y_end) /100;
-      for (long y = y_origin ; y >= y_end; y = y - tracing_scale) {
-        Mouse.moveAbsolute(x_origin, y);
-      }
-
-    } else { // top to bottom
-      //     tracing_scale =  (y_end-y_origin) /100;
-      for (long y = y_origin ; y <= y_end; y = y + tracing_scale) {
-        Mouse.moveAbsolute(x_origin, y);
-      }
-
-    }
-
-
-
-  }
-}
 
 void _warp_jump(long left, long top, long height, long width) {
   long x_center = left + width / 2;
@@ -508,10 +445,7 @@ void warp_mouse(Key ninth) {
   }
 
 
-  // the cloverleaf
-
-  //    _warp_cross(section_left, section_top, next_height,next_width);
-
+     
   _warp_jump(section_left, section_top, next_height, next_width);
 
 }
