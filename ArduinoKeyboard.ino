@@ -130,16 +130,10 @@ void scan_matrix() {
       //If we see an electrical connection on I->J,
 
       if (left_sx1509) {
-        
-        
-         matrixState[row - 8][col] |= ! leftSx1509.rawReadPin(col);
+        matrixState[row - 8][col] |=  !leftSx1509.rawReadPin(col);
       }
       if (right_sx1509) {
-
-
-        
-         matrixState[row - 8][15 - col] |= ! rightSx1509.rawReadPin(col);
-        
+        matrixState[row - 8][15 - col] |=  ! rightSx1509.rawReadPin(col);
       }
 
 
@@ -148,14 +142,15 @@ void scan_matrix() {
       // metakey, so we can act on it, lest we only discover
       // that we should be looking at a seconary Keymap halfway
       // through the matrix scan
+      if (0) {
+        
+        if (left_sx1509 && ( keymaps[active_keymap][row - 8][col].flags & SWITCH_TO_KEYMAP)) {
+          set_keymap(keymaps[active_keymap][row - 8][col], matrixState[row - 8 ][col]);
+        }
+        if (right_sx1509   && (keymaps[active_keymap][row - 8][15 - col].flags & SWITCH_TO_KEYMAP)) {
+          set_keymap(keymaps[active_keymap][row - 8][15 - col], matrixState[row - 8 ][15 - col]);
 
-      _fn_in("set_keymap");
-      if(left_sx1509 && ( keymaps[active_keymap][row - 8][col].flags & SWITCH_TO_KEYMAP)) {
-        set_keymap(keymaps[active_keymap][row - 8][col], matrixState[row - 8 ][col]);
-      }
-      if(right_sx1509   && (keymaps[active_keymap][row - 8][15 - col].flags & SWITCH_TO_KEYMAP)) { 
-        set_keymap(keymaps[active_keymap][row - 8][15 - col], matrixState[row - 8 ][15 - col]);
-
+        }
       }
 
     }
@@ -165,11 +160,11 @@ void scan_matrix() {
  {
     // ProfileTimer t ("bringing the pins high again");
 
-    if(left_sx1509) {
-    leftSx1509.rawWritePin(row, HIGH);
+    if (left_sx1509) {
+      leftSx1509.rawWritePin(row, HIGH);
     }
     if (right_sx1509) {
-    rightSx1509.rawWritePin(row, HIGH);
+      rightSx1509.rawWritePin(row, HIGH);
 
     }
  }
@@ -191,7 +186,7 @@ void setup()
   setup_matrix();
 
   primary_keymap = load_primary_keymap();
-}
+}    
 
 boolean init_sx1509(sx1509Class io) {
   int x = 0;
@@ -627,6 +622,9 @@ void send_key_events()
 
     for (byte col = 0; col < COLS; col++) {
       byte switchState = matrixState[row][col];
+      
+      
+      
       Key mappedKey = keymaps[active_keymap][row][col];
 
       if (mappedKey.flags & MOUSE_KEY ) {
@@ -648,7 +646,7 @@ void send_key_events()
             pressKeycode(mappedKey.rawKey);
           }
         } else if (key_toggled_off (switchState)) {
-          releaseKeycode(mappedKey.rawKey);
+            releaseKeycode(mappedKey.rawKey);
         }
       }
     }
